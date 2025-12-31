@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const sequelize = require('./config/database');
 const User = require('./models/User');
+const authRoutes = require('./routes/auth');
 const PrayerLog = require('./models/PrayerLog');
 const { Op } = require('sequelize');
 require('dotenv').config();
@@ -11,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/auth', authRoutes);
 
 // Associations
 User.hasMany(PrayerLog, { foreignKey: 'userId' });
@@ -28,9 +30,9 @@ app.get('/', (req, res) => {
 });
 
 // Get Prayer Logs Endpoint
-app.get('/api/logs', async (req, res) => {
+app.get('/api/logs', require('./middleware/auth'), async (req, res) => {
   try {
-    const userId = 1; // Default user
+    const userId = req.user.id;
     const { startDate, endDate } = req.query;
 
     const whereClause = { userId };
@@ -54,17 +56,10 @@ app.get('/api/logs', async (req, res) => {
 });
 
 // Sync Endpoint
-app.post('/api/sync', async (req, res) => {
+app.post('/api/sync', require('./middleware/auth'), async (req, res) => {
   try {
     const { logs } = req.body;
-    // Assume single user for now (ID: 1) as authentication wasn't in scope yet
-    const userId = 1;
-
-    // Find or create user
-    await User.findOrCreate({
-      where: { id: userId },
-      defaults: { username: 'default_user' }
-    });
+    const userId = req.user.id;
 
     console.log(`Syncing ${logs.length} logs for user ${userId}`);
 
