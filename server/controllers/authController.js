@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const emailService = require('../services/emailService');
 
 const register = async (req, res) => {
     try {
@@ -20,6 +21,11 @@ const register = async (req, res) => {
         });
 
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
+
+        // Send welcome email
+        if (emailService && emailService.sendWelcomeEmail) {
+            await emailService.sendWelcomeEmail(user.email, user.username);
+        }
 
         res.status(201).json({ token, user: { id: user.id, username: user.username, email: user.email } });
     } catch (error) {
@@ -58,4 +64,53 @@ const getMe = async (req, res) => {
     }
 };
 
-module.exports = { register, login, getMe };
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user.id;
+
+        const user = await User.findByPk(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid current password' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ where: { email } });
+
+        if (!user) {
+            // Check for user enumeration protection: maybe return success anyway?
+            // For now, let's be explicit for debugging
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Generate a reset token (simple implementation for now)
+        const resetToken = jwt.sign({ id: user.id, type: 'reset' }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '15m' });
+
+        if (emailService && emailService.sendPasswordResetEmail) {
+            await emailService.sendPasswordResetEmail(user.email, resetToken);
+        }
+
+        res.json({ message: 'Password reset email sent (check console)' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+module.exports = { register, login, getMe, changePassword, forgotPassword };
