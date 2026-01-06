@@ -90,7 +90,10 @@ app.post('/api/sync', require('./middleware/auth'), async (req, res) => {
         asr_status: log.asr_status,
         maghrib_status: log.maghrib_status,
         isha_status: log.isha_status,
-        tahajjud_status: log.tahajjud_status || 'NONE'
+        tahajjud_status: log.tahajjud_status || 'NONE',
+        ishrak_status: log.ishrak_status || 'NONE',
+        duha_status: log.duha_status || 'NONE',
+        awwabin_status: log.awwabin_status || 'NONE'
       });
       results.push(record);
     }

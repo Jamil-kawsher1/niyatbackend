@@ -31,6 +31,18 @@ const PrayerLog = sequelize.define('PrayerLog', {
         type: DataTypes.ENUM('NONE', 'PRAYED', 'MISSED'),
         defaultValue: 'NONE'
     },
+    ishrak_status: {
+        type: DataTypes.ENUM('NONE', 'PRAYED', 'MISSED'),
+        defaultValue: 'NONE'
+    },
+    duha_status: {
+        type: DataTypes.ENUM('NONE', 'PRAYED', 'MISSED'),
+        defaultValue: 'NONE'
+    },
+    awwabin_status: {
+        type: DataTypes.ENUM('NONE', 'PRAYED', 'MISSED'),
+        defaultValue: 'NONE'
+    },
     userId: { // Explicitly adding for clarity, though associations handle it
         type: DataTypes.INTEGER,
         unique: 'user_date_unique'
