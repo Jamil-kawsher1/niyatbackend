@@ -35,7 +35,7 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, rememberMe } = req.body;
 
         const user = await User.findOne({ where: { email } });
         if (!user) {
@@ -47,7 +47,8 @@ const login = async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
+        const expiresIn = rememberMe ? '15d' : '1d';
+        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn });
 
         res.json({ token, user: { id: user.id, username: user.username, email: user.email } });
     } catch (error) {
