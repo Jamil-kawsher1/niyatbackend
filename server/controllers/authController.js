@@ -114,4 +114,38 @@ const forgotPassword = async (req, res) => {
     }
 };
 
-module.exports = { register, login, getMe, changePassword, forgotPassword };
+const resetPassword = async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token) {
+            return res.status(400).json({ message: 'Token is required' });
+        }
+
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+        } catch (err) {
+            return res.status(400).json({ message: 'Invalid or expired token' });
+        }
+
+        if (decoded.type !== 'reset') {
+            // Optional: strictly enforce check if you used 'type' in payload
+        }
+
+        const user = await User.findByPk(decoded.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        res.json({ message: 'Password reset successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+module.exports = { register, login, getMe, changePassword, forgotPassword, resetPassword };
